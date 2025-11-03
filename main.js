@@ -177,6 +177,18 @@ class WebGLScene {
         });
         this.renderer.setSize(this.sizes.width, this.sizes.height);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // --- POST-PROCESADO ---
+        this.composer = new THREE.EffectComposer(this.renderer);
+        this.composer.addPass(new THREE.RenderPass(this.scene, this.camera));
+
+        const bloomPass = new THREE.UnrealBloomPass(
+            new THREE.Vector2(this.sizes.width, this.sizes.height),
+            1.2, // strength
+            0.1, // radius
+            0.1  // threshold
+        );
+        this.composer.addPass(bloomPass);
     }
 
     initMesh() {
@@ -200,6 +212,7 @@ class WebGLScene {
         this.asteroids = new THREE.Group();
         const textureLoader = new THREE.TextureLoader();
         const asteroidTexture = textureLoader.load('https://threejs.org/examples/textures/planets/moon_1024.jpg');
+        const normalMapTexture = textureLoader.load('https://threejs.org/examples/textures/planets/moon_normal_1024.jpg');
         const asteroidGeometries = [
             new THREE.DodecahedronGeometry(0.05, 0),
             new THREE.BoxGeometry(0.08, 0.08, 0.08),
@@ -210,6 +223,7 @@ class WebGLScene {
             const geometry = asteroidGeometries[Math.floor(Math.random() * asteroidGeometries.length)];
             const material = new THREE.MeshStandardMaterial({
                 map: asteroidTexture,
+                normalMap: normalMapTexture,
                 roughness: 0.9,
                 metalness: 0.2,
             });
@@ -277,6 +291,7 @@ class WebGLScene {
             this.camera.aspect = this.sizes.width / this.sizes.height;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(this.sizes.width, this.sizes.height);
+            this.composer.setSize(this.sizes.width, this.sizes.height);
             this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         });
     }
@@ -303,7 +318,7 @@ class WebGLScene {
             this.dustClouds.rotation.y += 0.0001;
         }
 
-        this.renderer.render(this.scene, this.camera);
+        this.composer.render();
     }
 }
 
@@ -712,68 +727,63 @@ class App {
     }
 
     initScrollAnimations() {
-        // --- VIAJE ESPACIAL CONTINUO ---
-        const sections = document.querySelectorAll('main > section');
-        const mainTl = gsap.timeline({
+        // --- NUEVO SISTEMA DE ANIMACIÓN POR SECCIÓN ---
+
+        // Animación inicial del Héroe
+        gsap.to('.hero-title', {
             scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1.5,
-            }
+                trigger: '#hero',
+                start: 'top top',
+                end: 'bottom top',
+                scrub: true,
+            },
+            opacity: 0,
+            y: -100
         });
 
-        // Posiciones de la cámara para cada sección
+        const sections = document.querySelectorAll('main > section');
         const cameraPositions = [
-            { x: 0, y: 0, z: 2.5 },   // About
-            { x: -5, y: 1, z: 5 },  // Technologies
-            { x: 5, y: -2, z: 8 }, // Projects
-            { x: 0, y: 2, z: 12 },  // Experience
-            { x: 0, y: 0, z: 15 }   // Contact
+            { x: 0, y: 0, z: 4 },   // About
+            { x: 3, y: -2, z: 6 },  // Skills Ticker (la cámara se mueve)
+            { x: -4, y: 1, z: 9 },  // Technologies
+            { x: 5, y: -1, z: 12 }, // Projects
+            { x: 0, y: 2, z: 15 },  // Experience
+            { x: 0, y: 0, z: 18 }   // Contact
         ];
 
-        // 1. Transición inicial del Héroe
-        mainTl
-            .to(".hero-title", { opacity: 0, y: -50, ease: "power1.in" })
-            .to(this.webgl.camera.position, { ...cameraPositions[0], ease: "power1.inOut" }, "<");
-
-        // 2. Viaje a través de las secciones con cinematografía mejorada
         sections.forEach((section, i) => {
-            const sectionTl = gsap.timeline();
+            const contentPanel = section.querySelector('.content-panel');
 
-            // La cámara se mueve hacia la sección
-            sectionTl.to(this.webgl.camera.position, {
-                ...cameraPositions[i + 1],
-                duration: 2,
-                ease: "power2.inOut",
-                onUpdate: () => {
-                    // Sutil vaivén de la cámara
-                    this.webgl.camera.position.x += Math.sin(Date.now() * 0.0005) * 0.05;
-                    this.webgl.camera.position.y += Math.cos(Date.now() * 0.0005) * 0.05;
+            // Animación para mover la cámara a la posición de la sección
+            gsap.to(this.webgl.camera.position, {
+                x: cameraPositions[i].x,
+                y: cameraPositions[i].y,
+                z: cameraPositions[i].z,
+                scrollTrigger: {
+                    trigger: section,
+                    start: 'top bottom',
+                    end: 'center center',
+                    scrub: 1.5,
                 }
             });
 
-            // Aparece la sección y el foco de luz la ilumina
-            sectionTl.fromTo(section,
-                { opacity: 0, y: 50 },
-                { opacity: 1, y: 0, duration: 1, ease: "power3.out" },
-                "-=1.5"
-            )
-            .fromTo(this.webgl.spotlight, { intensity: 0 }, { intensity: 0.8, duration: 1 }, "<")
-            .to(this.webgl.spotlight.target, {
-                x: cameraPositions[i + 1].x,
-                y: cameraPositions[i + 1].y,
-                z: cameraPositions[i + 1].z - 5, // Apunta un poco más allá
-            }, "<");
-
-            // La sección se mantiene visible
-            sectionTl.to({}, { duration: 2 });
-
-            // Desaparece la sección y el foco de luz se apaga
-            sectionTl.to(section, { opacity: 0, y: -50, duration: 1, ease: "power3.in" })
-            .to(this.webgl.spotlight, { intensity: 0, duration: 1 }, "<");
-
-            mainTl.add(sectionTl);
+            // Animación para hacer aparecer el panel de contenido
+            if (contentPanel) {
+                gsap.fromTo(contentPanel,
+                    { opacity: 0, y: 50, visibility: 'hidden' },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        visibility: 'visible',
+                        scrollTrigger: {
+                            trigger: section,
+                            start: 'top 20%',
+                            end: 'center center',
+                            toggleActions: 'play none none reverse'
+                        }
+                    }
+                );
+            }
         });
 
 
