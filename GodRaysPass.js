@@ -1,4 +1,4 @@
-// GodRaysPass.js - Reescribo con sintaxis de clase ES6 para compatibilidad
+// GodRaysPass.js - Versión final autocontenida sin dependencias obsoletas
 class GodRaysPass extends THREE.Pass {
     constructor(camera, mesh) {
         super();
@@ -21,7 +21,7 @@ class GodRaysPass extends THREE.Pass {
                 varying vec2 vUv;
                 void main() {
                     vUv = uv;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+                    gl_Position = vec4(position, 1.0);
                 }
             `,
             fragmentShader: `
@@ -57,7 +57,12 @@ class GodRaysPass extends THREE.Pass {
             `
         });
 
-        this.fsQuad = new THREE.Pass.FullScreenQuad(this.godraysMaterial);
+        // Geometría interna para renderizar a pantalla completa
+        this.geometry = new THREE.BufferGeometry();
+        this.geometry.setAttribute('position', new THREE.Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3));
+        this.geometry.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 2, 0, 0, 2], 2));
+        this.quad = new THREE.Mesh(this.geometry, this.godraysMaterial);
+
         this.renderToScreen = false;
     }
 
@@ -72,11 +77,11 @@ class GodRaysPass extends THREE.Pass {
 
         if (this.renderToScreen) {
             renderer.setRenderTarget(null);
-            this.fsQuad.render(renderer);
+            renderer.render(this.quad, new THREE.Camera());
         } else {
             renderer.setRenderTarget(writeBuffer);
             if (this.clear) renderer.clear();
-            this.fsQuad.render(renderer);
+            renderer.render(this.quad, new THREE.Camera());
         }
     }
 }
