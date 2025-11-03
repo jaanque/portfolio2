@@ -10,14 +10,13 @@ gsap.registerPlugin(ScrollTrigger);
 
 // --- CÓDIGO DE SHADERS (GLSL) ---
 
-// Shader para el Toroide del Héroe (Agua/Ruido)
-const torusVertexShader = `
+// --- SHADERS DE LA ESTRELLA DEL HÉROE ---
+const starVertexShader = `
   uniform float uTime;
-  uniform vec2 uMouse;
+  varying vec3 vNormal;
   varying float vNoise;
-  varying vec2 vUv;
 
-  // Ruido Simplex 3D
+  // Ruido Simplex 3D (para no repetirlo, asumimos que está disponible)
   vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
   vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
   vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
@@ -69,32 +68,29 @@ const torusVertexShader = `
   }
 
   void main() {
-    vUv = uv;
-    float noiseFrequency = 3.0;
-    // Interacción 3D: La distorsión se basa en el ratón
-    float distortion = 0.5 + (abs(uMouse.y) * 1.5);
-    
-    vNoise = snoise(vec3(position * noiseFrequency + uTime * 0.3));
-    
-    vec3 newPosition = position + normal * vNoise * distortion;
-    
+    vNormal = normal;
+    float distortion = snoise(position * 3.0 + uTime * 0.5) * 0.2;
+    vec3 newPosition = position + normal * distortion;
+    vNoise = snoise(position * 1.0 + uTime * 0.2);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
   }
 `;
-const torusFragmentShader = `
+const starFragmentShader = `
   uniform float uTime;
+  varying vec3 vNormal;
   varying float vNoise;
-  varying vec2 vUv;
-  
-  // Color del tema (Hardcodeado a Oscuro)
-  const vec3 uColor1 = vec3(0.0, 1.0, 1.0); // cian
-  const vec3 uColor2 = vec3(1.0, 0.0, 0.75); // magenta
 
   void main() {
-    float colorNoise = (vNoise + 1.0) * 0.5;
-    vec3 color = mix(uColor1, uColor2, colorNoise);
-    float vignette = 1.0 - smoothstep(0.4, 1.0, length(vUv - 0.5));
-    gl_FragColor = vec4(color * vignette, 1.0);
+    float intensity = 1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0));
+    vec3 baseColor = vec3(0.0, 1.0, 1.0); // Cian
+    vec3 accentColor = vec3(1.0, 0.0, 0.75); // Magenta
+
+    float rim = pow(intensity, 2.0);
+
+    vec3 color = mix(baseColor, accentColor, vNoise);
+    color += vec3(1.0, 1.0, 1.0) * rim * 0.5;
+
+    gl_FragColor = vec4(color, 1.0);
   }
 `;
 
@@ -141,9 +137,19 @@ class WebGLScene {
         
         this.initCamera();
         this.initRenderer();
+        this.initLights(); // <- AÑADIDO
         this.initMesh();
         this.initParticles();
         this.initResizeListener();
+    }
+
+    initLights() {
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+        this.scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0x00ffff, 2, 10);
+        pointLight.position.set(0, 0, 0); // La luz emana del centro (la estrella)
+        this.scene.add(pointLight);
     }
 
     initCamera() {
@@ -163,21 +169,45 @@ class WebGLScene {
     }
 
     initMesh() {
+        // --- ESTRELLA CENTRAL ---
         this.uniforms = {
             uTime: { value: 0 },
             uMouse: { value: new THREE.Vector2(0, 0) },
         };
 
-        const geometry = new THREE.TorusGeometry(0.8, 0.3, 32, 64); 
-        const material = new THREE.ShaderMaterial({
-            vertexShader: torusVertexShader,
-            fragmentShader: torusFragmentShader,
+        const starGeometry = new THREE.IcosahedronGeometry(1, 30);
+        const starMaterial = new THREE.ShaderMaterial({
+            vertexShader: starVertexShader,
+            fragmentShader: starFragmentShader,
             uniforms: this.uniforms,
-            wireframe: true
         });
         
-        this.mesh = new THREE.Mesh(geometry, material);
-        this.scene.add(this.mesh);
+        this.star = new THREE.Mesh(starGeometry, starMaterial);
+        this.scene.add(this.star);
+
+        // --- CINTURÓN DE ASTEROIDES ---
+        this.asteroids = new THREE.Group();
+        const asteroidGeometry = new THREE.DodecahedronGeometry(0.05, 0);
+        const asteroidMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.8,
+            metalness: 0.5,
+        });
+
+        for (let i = 0; i < 500; i++) {
+            const asteroid = new THREE.Mesh(asteroidGeometry, asteroidMaterial);
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 2 + Math.random() * 2;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const y = (Math.random() - 0.5) * 0.5;
+
+            asteroid.position.set(x, y, z);
+            asteroid.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+
+            this.asteroids.add(asteroid);
+        }
+        this.scene.add(this.asteroids);
     }
     
     initParticles() {
@@ -219,16 +249,20 @@ class WebGLScene {
     render(mouse, lenis) {
         this.uniforms.uTime.value += 0.01;
         
+        // Rotación de la estrella y los asteroides
+        this.star.rotation.y += 0.001;
+        this.asteroids.rotation.y += 0.0003;
+
         const targetMouse = new THREE.Vector2(
             (mouse.getX() / this.sizes.width) * 2 - 1,
             -(mouse.getY() / this.sizes.height) * 2 + 1
         );
         this.uniforms.uMouse.value.lerp(targetMouse, 0.05);
         
-        // Efecto "Warp"
-        const warpSpeed = Math.abs(lenis.velocity) * 0.0002;
-        this.particles.rotation.y += (warpSpeed + 0.0001);
-        this.particlesMaterial.opacity = gsap.utils.clamp(0.1, 0.5, 1.0 - warpSpeed * 5);
+        // Efecto "Warp" intensificado
+        const warpSpeed = Math.abs(lenis.velocity) * 0.0005;
+        this.particles.rotation.y += (warpSpeed + 0.0002);
+        this.particlesMaterial.opacity = gsap.utils.clamp(0.1, 0.8, 1.0 - warpSpeed * 4);
 
         this.renderer.render(this.scene, this.camera);
     }
@@ -639,31 +673,41 @@ class App {
     }
 
     initScrollAnimations() {
-        // --- Transición de Zoom 3D (Corregida) ---
-        const zoomTl = gsap.timeline({
+        // --- VIAJE ASTRAL 3D (Transición Mejorada) ---
+        const travelTl = gsap.timeline({
             scrollTrigger: {
                 trigger: "#hero",
                 start: "top top",
-                end: "+=150%", // 1.5 veces la altura de la pantalla
-                scrub: 1, 
+                end: "+=250%", // Aumentamos la duración del viaje
+                scrub: 1.5, // Un scrub más suave
                 pin: true,
             }
         });
 
-        zoomTl
-            .to(this.webgl.camera.position, { z: 0.5, ease: "power2.in" }, 0)
-            .to(this.webgl.mesh.scale, { x: 3, y: 3, z: 3, ease: "power2.in" }, 0)
-            .to(".hero-title", { opacity: 0, y: -100, ease: "power1.in" }, 0)
-            .to(".webgl-canvas", { opacity: 0, ease: "power1.inOut" }, 0.8) 
-            .to("#main-content", { opacity: 1, ease: "power1.inOut" }, 0.85) 
+        travelTl
+            // 1. El título desaparece y la cámara se acerca
+            .to(".hero-title", { opacity: 0, y: -50, ease: "power1.in" }, 0)
+            .to(this.webgl.camera.position, { z: 1.5, ease: "power2.in" }, 0)
+
+            // 2. Volamos a través de los asteroides
+            .to(this.webgl.camera.position, {
+                x: 1.5, // La cámara se desplaza lateralmente
+                z: -1,  // Atraviesa el centro
+                ease: "power1.inOut"
+            }, 0.3)
+            .to(this.webgl.camera.rotation, { y: Math.PI / 4, ease: "power1.inOut" }, 0.3) // La cámara gira
+
+            // 3. El canvas se desvanece y aparece el contenido
+            .to(".webgl-canvas", { opacity: 0, ease: "power1.out" }, 0.7)
+            .to("#main-content", { opacity: 1, ease: "power1.inOut" }, 0.75)
             .to("#main-content > section", { 
                 opacity: 1,
                 y: 0,
                 stagger: 0.1,
                 ease: "expo.out"
-            }, 0.9);
+            }, 0.8);
 
-        // --- MÁS 3D: El "Motif" que reaparece ---
+        // --- REAPARICIÓN DEL UNIVERSO ---
         gsap.timeline({
             scrollTrigger: {
                 trigger: "#experience",
@@ -672,9 +716,10 @@ class App {
                 scrub: 1,
             }
         })
-        .to(".webgl-canvas", { opacity: 0.15, ease: "power1.inOut" }, 0) 
-        .to(this.webgl.camera.position, { z: 4.5, ease: "none" }, 0) 
-        .to(this.webgl.mesh.position, { x: 2.5, y: -1, ease: "none" }, 0); 
+        .to(".webgl-canvas", { opacity: 0.2, ease: "power1.inOut" }, 0)
+        .to(this.webgl.camera.position, { x: 0, z: 4, ease: "none" }, 0) // Posición lejana
+        .to(this.webgl.camera.rotation, { y: 0, ease: "none" }, 0) // Resetea rotación
+        .to(this.webgl.star.position, { x: 2.5, y: -1, ease: "none" }, 0);
 
         ScrollTrigger.create({
             trigger: "#contact",
