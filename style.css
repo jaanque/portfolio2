@@ -191,6 +191,15 @@ nav {
     opacity: 0;
     transform: translateY(60px);
     will-change: transform, opacity;
+
+    /* Panel de Vidrio */
+    background: rgba(10, 10, 10, 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 4rem;
+    max-width: 900px;
+    margin: 0 auto 20vh auto; /* Espacio entre secciones */
 }
 #about {
     padding: 15rem 5%;

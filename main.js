@@ -140,6 +140,7 @@ class WebGLScene {
         this.initLights(); // <- AÑADIDO
         this.initMesh();
         this.initSkybox(); // <- REEMPLAZA initParticles
+        this.initDustClouds(); // <- AÑADIDO
         this.initResizeListener();
     }
 
@@ -154,6 +155,12 @@ class WebGLScene {
         // Luz que sigue a la cámara para iluminar el contenido
         this.cameraLight = new THREE.PointLight(0xffffff, 0.5, 10);
         this.scene.add(this.cameraLight);
+
+        // Spotlight para enfocar el contenido
+        this.spotlight = new THREE.SpotLight(0xffffff, 0.8, 20, Math.PI / 8, 0.5);
+        this.spotlight.castShadow = true;
+        this.scene.add(this.spotlight);
+        this.scene.add(this.spotlight.target);
     }
 
     initCamera() {
@@ -189,21 +196,27 @@ class WebGLScene {
         this.star = new THREE.Mesh(starGeometry, starMaterial);
         this.scene.add(this.star);
 
-        // --- CINTURÓN DE ASTEROIDES ---
+        // --- CINTURÓN DE ASTEROIDES DIVERSIFICADO ---
         this.asteroids = new THREE.Group();
-        const asteroidGeometry = new THREE.DodecahedronGeometry(0.05, 0);
         const textureLoader = new THREE.TextureLoader();
         const asteroidTexture = textureLoader.load('https://threejs.org/examples/textures/planets/moon_1024.jpg');
-        const asteroidMaterial = new THREE.MeshStandardMaterial({
-            map: asteroidTexture,
-            roughness: 0.9,
-            metalness: 0.2,
-        });
+        const asteroidGeometries = [
+            new THREE.DodecahedronGeometry(0.05, 0),
+            new THREE.BoxGeometry(0.08, 0.08, 0.08),
+            new THREE.IcosahedronGeometry(0.06, 0)
+        ];
 
-        for (let i = 0; i < 500; i++) {
-            const asteroid = new THREE.Mesh(asteroidGeometry, asteroidMaterial);
+        for (let i = 0; i < 800; i++) {
+            const geometry = asteroidGeometries[Math.floor(Math.random() * asteroidGeometries.length)];
+            const material = new THREE.MeshStandardMaterial({
+                map: asteroidTexture,
+                roughness: 0.9,
+                metalness: 0.2,
+            });
+            const asteroid = new THREE.Mesh(geometry, material);
+
             const angle = Math.random() * Math.PI * 2;
-            const radius = 2 + Math.random() * 2;
+            const radius = 2 + Math.random() * 4; // Un cinturón más ancho
             const x = Math.cos(angle) * radius;
             const z = Math.sin(angle) * radius;
             const y = (Math.random() - 0.5) * 0.5;
@@ -227,6 +240,34 @@ class WebGLScene {
             'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_nz.jpg'
         ]);
         this.scene.background = texture;
+    }
+
+    initDustClouds() {
+        const dustGeometry = new THREE.BufferGeometry();
+        const dustVertices = [];
+        const dustTextureLoader = new THREE.TextureLoader();
+        const dustTexture = dustTextureLoader.load('https://threejs.org/examples/textures/sprites/disc.png');
+
+        for (let i = 0; i < 2000; i++) {
+            const x = (Math.random() - 0.5) * 30;
+            const y = (Math.random() - 0.5) * 30;
+            const z = (Math.random() - 0.5) * 30;
+            dustVertices.push(x, y, z);
+        }
+
+        dustGeometry.setAttribute('position', new THREE.Float32BufferAttribute(dustVertices, 3));
+
+        const dustMaterial = new THREE.PointsMaterial({
+            size: 0.1,
+            map: dustTexture,
+            transparent: true,
+            opacity: 0.1,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+
+        this.dustClouds = new THREE.Points(dustGeometry, dustMaterial);
+        this.scene.add(this.dustClouds);
     }
 
     initResizeListener() {
@@ -256,7 +297,12 @@ class WebGLScene {
         // La luz sigue a la cámara
         this.cameraLight.position.copy(this.camera.position);
 
-        // El efecto "Warp" de partículas ya no es necesario
+        // Animación de las nubes de polvo
+        if (this.dustClouds) {
+            this.dustClouds.rotation.x += 0.0001;
+            this.dustClouds.rotation.y += 0.0001;
+        }
+
         this.renderer.render(this.scene, this.camera);
     }
 }
@@ -691,28 +737,43 @@ class App {
             .to(".hero-title", { opacity: 0, y: -50, ease: "power1.in" })
             .to(this.webgl.camera.position, { ...cameraPositions[0], ease: "power1.inOut" }, "<");
 
-        // 2. Viaje a través de las secciones
+        // 2. Viaje a través de las secciones con cinematografía mejorada
         sections.forEach((section, i) => {
-            // Hacer aparecer la sección
-            mainTl.fromTo(section,
+            const sectionTl = gsap.timeline();
+
+            // La cámara se mueve hacia la sección
+            sectionTl.to(this.webgl.camera.position, {
+                ...cameraPositions[i + 1],
+                duration: 2,
+                ease: "power2.inOut",
+                onUpdate: () => {
+                    // Sutil vaivén de la cámara
+                    this.webgl.camera.position.x += Math.sin(Date.now() * 0.0005) * 0.05;
+                    this.webgl.camera.position.y += Math.cos(Date.now() * 0.0005) * 0.05;
+                }
+            });
+
+            // Aparece la sección y el foco de luz la ilumina
+            sectionTl.fromTo(section,
                 { opacity: 0, y: 50 },
-                { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
-            );
+                { opacity: 1, y: 0, duration: 1, ease: "power3.out" },
+                "-=1.5"
+            )
+            .fromTo(this.webgl.spotlight, { intensity: 0 }, { intensity: 0.8, duration: 1 }, "<")
+            .to(this.webgl.spotlight.target, {
+                x: cameraPositions[i + 1].x,
+                y: cameraPositions[i + 1].y,
+                z: cameraPositions[i + 1].z - 5, // Apunta un poco más allá
+            }, "<");
 
-            // Mover la cámara a la siguiente posición
-            if (cameraPositions[i + 1]) {
-                mainTl.to(this.webgl.camera.position, {
-                    ...cameraPositions[i + 1],
-                    duration: 2, // Duración del viaje
-                    ease: "sine.inOut"
-                });
-            }
+            // La sección se mantiene visible
+            sectionTl.to({}, { duration: 2 });
 
-            // Hacer desaparecer la sección
-            mainTl.to(section,
-                { opacity: 0, y: -50, duration: 0.5, ease: "power2.in" },
-                ">+1.5" // Deja la sección visible por un tiempo
-            );
+            // Desaparece la sección y el foco de luz se apaga
+            sectionTl.to(section, { opacity: 0, y: -50, duration: 1, ease: "power3.in" })
+            .to(this.webgl.spotlight, { intensity: 0, duration: 1 }, "<");
+
+            mainTl.add(sectionTl);
         });
 
 
