@@ -184,7 +184,7 @@ nav {
     position: relative;
     z-index: 3; 
     opacity: 0; 
-    background-color: var(--color-bg); 
+    background-color: transparent; /* <- CAMBIO CLAVE */
     will-change: opacity;
 }
 #main-content > section { 

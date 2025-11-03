@@ -139,17 +139,21 @@ class WebGLScene {
         this.initRenderer();
         this.initLights(); // <- AÑADIDO
         this.initMesh();
-        this.initParticles();
+        this.initSkybox(); // <- REEMPLAZA initParticles
         this.initResizeListener();
     }
 
     initLights() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); // Un poco más de luz ambiental
         this.scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0x00ffff, 2, 10);
-        pointLight.position.set(0, 0, 0); // La luz emana del centro (la estrella)
-        this.scene.add(pointLight);
+        // Luz principal que emana de la estrella
+        const starLight = new THREE.PointLight(0x00ffff, 1.5, 15);
+        this.scene.add(starLight);
+
+        // Luz que sigue a la cámara para iluminar el contenido
+        this.cameraLight = new THREE.PointLight(0xffffff, 0.5, 10);
+        this.scene.add(this.cameraLight);
     }
 
     initCamera() {
@@ -188,10 +192,12 @@ class WebGLScene {
         // --- CINTURÓN DE ASTEROIDES ---
         this.asteroids = new THREE.Group();
         const asteroidGeometry = new THREE.DodecahedronGeometry(0.05, 0);
+        const textureLoader = new THREE.TextureLoader();
+        const asteroidTexture = textureLoader.load('https://threejs.org/examples/textures/planets/moon_1024.jpg');
         const asteroidMaterial = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            roughness: 0.8,
-            metalness: 0.5,
+            map: asteroidTexture,
+            roughness: 0.9,
+            metalness: 0.2,
         });
 
         for (let i = 0; i < 500; i++) {
@@ -209,30 +215,18 @@ class WebGLScene {
         }
         this.scene.add(this.asteroids);
     }
-    
-    initParticles() {
-        const particleCount = 5000;
-        const positions = new Float32Array(particleCount * 3);
-        
-        for (let i = 0; i < particleCount; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 20; 
-            positions[i * 3 + 1] = (Math.random() - 0.5) * 20; 
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 20; 
-        }
-        
-        const particlesGeometry = new THREE.BufferGeometry();
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        
-        this.particlesMaterial = new THREE.PointsMaterial({
-            color: '#ffffff',
-            size: 0.02,
-            transparent: true,
-            opacity: 0.5,
-            sizeAttenuation: true
-        });
-        
-        this.particles = new THREE.Points(particlesGeometry, this.particlesMaterial);
-        this.scene.add(this.particles);
+
+    initSkybox() {
+        const loader = new THREE.CubeTextureLoader();
+        const texture = loader.load([
+            'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_px.jpg',
+            'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_nx.jpg',
+            'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_py.jpg',
+            'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_ny.jpg',
+            'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_pz.jpg',
+            'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_nz.jpg'
+        ]);
+        this.scene.background = texture;
     }
 
     initResizeListener() {
@@ -259,11 +253,10 @@ class WebGLScene {
         );
         this.uniforms.uMouse.value.lerp(targetMouse, 0.05);
         
-        // Efecto "Warp" intensificado
-        const warpSpeed = Math.abs(lenis.velocity) * 0.0005;
-        this.particles.rotation.y += (warpSpeed + 0.0002);
-        this.particlesMaterial.opacity = gsap.utils.clamp(0.1, 0.8, 1.0 - warpSpeed * 4);
+        // La luz sigue a la cámara
+        this.cameraLight.position.copy(this.camera.position);
 
+        // El efecto "Warp" de partículas ya no es necesario
         this.renderer.render(this.scene, this.camera);
     }
 }
@@ -673,59 +666,53 @@ class App {
     }
 
     initScrollAnimations() {
-        // --- VIAJE ASTRAL 3D (Transición Mejorada) ---
-        const travelTl = gsap.timeline({
+        // --- VIAJE ESPACIAL CONTINUO ---
+        const sections = document.querySelectorAll('main > section');
+        const mainTl = gsap.timeline({
             scrollTrigger: {
-                trigger: "#hero",
+                trigger: "body",
                 start: "top top",
-                end: "+=250%", // Aumentamos la duración del viaje
-                scrub: 1.5, // Un scrub más suave
-                pin: true,
+                end: "bottom bottom",
+                scrub: 1.5,
             }
         });
 
-        travelTl
-            // 1. El título desaparece y la cámara se acerca
-            .to(".hero-title", { opacity: 0, y: -50, ease: "power1.in" }, 0)
-            .to(this.webgl.camera.position, { z: 1.5, ease: "power2.in" }, 0)
+        // Posiciones de la cámara para cada sección
+        const cameraPositions = [
+            { x: 0, y: 0, z: 2.5 },   // About
+            { x: -5, y: 1, z: 5 },  // Technologies
+            { x: 5, y: -2, z: 8 }, // Projects
+            { x: 0, y: 2, z: 12 },  // Experience
+            { x: 0, y: 0, z: 15 }   // Contact
+        ];
 
-            // 2. Volamos a través de los asteroides
-            .to(this.webgl.camera.position, {
-                x: 1.5, // La cámara se desplaza lateralmente
-                z: -1,  // Atraviesa el centro
-                ease: "power1.inOut"
-            }, 0.3)
-            .to(this.webgl.camera.rotation, { y: Math.PI / 4, ease: "power1.inOut" }, 0.3) // La cámara gira
+        // 1. Transición inicial del Héroe
+        mainTl
+            .to(".hero-title", { opacity: 0, y: -50, ease: "power1.in" })
+            .to(this.webgl.camera.position, { ...cameraPositions[0], ease: "power1.inOut" }, "<");
 
-            // 3. El canvas se desvanece y aparece el contenido
-            .to(".webgl-canvas", { opacity: 0, ease: "power1.out" }, 0.7)
-            .to("#main-content", { opacity: 1, ease: "power1.inOut" }, 0.75)
-            .to("#main-content > section", { 
-                opacity: 1,
-                y: 0,
-                stagger: 0.1,
-                ease: "expo.out"
-            }, 0.8);
+        // 2. Viaje a través de las secciones
+        sections.forEach((section, i) => {
+            // Hacer aparecer la sección
+            mainTl.fromTo(section,
+                { opacity: 0, y: 50 },
+                { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
+            );
 
-        // --- REAPARICIÓN DEL UNIVERSO ---
-        gsap.timeline({
-            scrollTrigger: {
-                trigger: "#experience",
-                start: "top bottom",
-                end: "bottom top",
-                scrub: 1,
+            // Mover la cámara a la siguiente posición
+            if (cameraPositions[i + 1]) {
+                mainTl.to(this.webgl.camera.position, {
+                    ...cameraPositions[i + 1],
+                    duration: 2, // Duración del viaje
+                    ease: "sine.inOut"
+                });
             }
-        })
-        .to(".webgl-canvas", { opacity: 0.2, ease: "power1.inOut" }, 0)
-        .to(this.webgl.camera.position, { x: 0, z: 4, ease: "none" }, 0) // Posición lejana
-        .to(this.webgl.camera.rotation, { y: 0, ease: "none" }, 0) // Resetea rotación
-        .to(this.webgl.star.position, { x: 2.5, y: -1, ease: "none" }, 0);
 
-        ScrollTrigger.create({
-            trigger: "#contact",
-            start: "top center",
-            onEnter: () => gsap.to(".webgl-canvas", { opacity: 0, duration: 1 }),
-            onLeaveBack: () => gsap.to(".webgl-canvas", { opacity: 0.15, duration: 1 })
+            // Hacer desaparecer la sección
+            mainTl.to(section,
+                { opacity: 0, y: -50, duration: 0.5, ease: "power2.in" },
+                ">+1.5" // Deja la sección visible por un tiempo
+            );
         });
 
 
