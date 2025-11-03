@@ -184,9 +184,9 @@ class WebGLScene {
 
         const bloomPass = new THREE.UnrealBloomPass(
             new THREE.Vector2(this.sizes.width, this.sizes.height),
-            1.2, // strength
-            0.1, // radius
-            0.1  // threshold
+            1.8, // strength (AUMENTADO PARA VERIFICACIÓN)
+            0.2, // radius
+            0.0  // threshold
         );
         this.composer.addPass(bloomPass);
     }
