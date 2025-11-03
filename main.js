@@ -189,6 +189,12 @@ class WebGLScene {
             0.1  // threshold
         );
         this.composer.addPass(bloomPass);
+
+        // --- GOD RAYS PASS ---
+        // Necesitamos renderizar la escena con un material negro para los rayos
+        this.renderScene = new THREE.RenderPass( this.scene, this.camera );
+        this.godraysPass = new THREE.GodRaysPass( this.camera, this.star );
+        this.composer.addPass( this.godraysPass );
     }
 
     initMesh() {
@@ -212,7 +218,7 @@ class WebGLScene {
         this.asteroids = new THREE.Group();
         const textureLoader = new THREE.TextureLoader();
         const asteroidTexture = textureLoader.load('https://threejs.org/examples/textures/planets/moon_1024.jpg');
-        const normalMapTexture = textureLoader.load('https://threejs.org/examples/textures/planets/moon_normal_1024.jpg');
+        const normalMapTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_normal_1024.jpg');
         const asteroidGeometries = [
             new THREE.DodecahedronGeometry(0.05, 0),
             new THREE.BoxGeometry(0.08, 0.08, 0.08),
@@ -754,11 +760,8 @@ class App {
         sections.forEach((section, i) => {
             const contentPanel = section.querySelector('.content-panel');
 
-            // Animación para mover la cámara a la posición de la sección
-            gsap.to(this.webgl.camera.position, {
-                x: cameraPositions[i].x,
-                y: cameraPositions[i].y,
-                z: cameraPositions[i].z,
+        // Animación cinematográfica de la cámara para la sección
+            const cameraTl = gsap.timeline({
                 scrollTrigger: {
                     trigger: section,
                     start: 'top bottom',
@@ -766,6 +769,17 @@ class App {
                     scrub: 1.5,
                 }
             });
+            cameraTl.to(this.webgl.camera.position, {
+                x: cameraPositions[i].x,
+                y: cameraPositions[i].y,
+                z: cameraPositions[i].z,
+            })
+            .to(this.webgl.camera.rotation, {
+                y: Math.random() * 0.2 - 0.1 // Rotación sutil
+            }, "<")
+            .to(this.webgl.camera, {
+                fov: 65 // Efecto de zoom dinámico
+            }, "<");
 
             // Animación para hacer aparecer el panel de contenido
             if (contentPanel) {
@@ -787,84 +801,21 @@ class App {
         });
 
 
-        // --- Resto de Animaciones de Scroll ---
-        
+        // --- OTRAS ANIMACIONES DE SCROLL (LIMPIADAS) ---
+        // La animación del ticker sigue siendo relevante
         gsap.to(".ticker-track", { xPercent: -50, ease: "none", duration: 40, repeat: -1 });
-
-        this.splitTextByWord('.about-text', 'word');
-        gsap.to(".about-text .word", {
-            opacity: 1,
-            stagger: 0.1,
-            ease: "power2.out",
-            scrollTrigger: {
-                trigger: "#about",
-                start: "top 60%",
-                end: "bottom 70%",
-                scrub: 1.5,
-            }
-        });
-
-        const techSection = document.getElementById('technologies');
-        const techContainer = document.querySelector('.tech-container');
         
-        gsap.to(techContainer, {
-            x: () => -(techContainer.scrollWidth - document.documentElement.clientWidth + 100),
-            ease: "none",
-            scrollTrigger: {
-                trigger: techSection,
-                start: "top top",
-                end: () => "+=" + (techContainer.scrollWidth - document.documentElement.clientWidth),
-                scrub: 1,
-                pin: true,
-                invalidateOnRefresh: true,
-            }
-        });
-        
-        const skewTarget = { value: 0 };
-        const skewClamp = gsap.utils.clamp(-10, 10); 
-        gsap.ticker.add(() => {
-            const velocity = this.lenis.velocity;
-            const skewed = skewClamp(velocity * 0.1);
-            skewTarget.value = gsap.utils.interpolate(skewTarget.value, skewed, 0.1); 
-            gsap.set(techContainer, { skewX: skewTarget.value, force3D: true });
-        });
-        
-        const timeline = document.querySelector('.exp-timeline');
-        gsap.to(".timeline-line", {
-            height: "100%",
-            scrollTrigger: {
-                trigger: timeline,
-                start: "top 70%",
-                end: "bottom 70%",
-                scrub: 1
-            }
-        });
-
+        // Las animaciones de entrada de las tarjetas de experiencia también pueden mantenerse
         gsap.utils.toArray('.exp-item').forEach(item => {
-            const date = item.querySelector('.exp-date');
-            const details = item.querySelector('.exp-details');
-            
-            gsap.from(date, { x: -100, opacity: 0, duration: 1, ease: "power3.out",
-                scrollTrigger: { trigger: item, start: "top 85%", toggleActions: "play none none none" }
-            });
-            gsap.from(details, { x: 100, opacity: 0, duration: 1, ease: "power3.out",
-                scrollTrigger: { trigger: item, start: "top 85%", toggleActions: "play none none none" }
-            });
-        });
-
-        // ¡NUEVO! Animación de Títulos por Caracteres
-         gsap.utils.toArray('.section-title[data-animate-title]').forEach(title => {
-            const chars = this.splitTextByChar(title);
-            gsap.from(chars, {
-                yPercent: 100,
+            gsap.from(item, {
                 opacity: 0,
-                stagger: 0.03,
+                y: 30,
                 duration: 0.8,
-                ease: "power3.out",
+                ease: "power2.out",
                 scrollTrigger: {
-                    trigger: title,
+                    trigger: item,
                     start: "top 85%",
-                    toggleActions: "play none none none"
+                    toggleActions: "play none none reverse"
                 }
             });
         });
