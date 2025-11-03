@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tu Nombre | Universo Creativo</title>
+    
+    <link rel="stylesheet" href="style.css">
+    
+    </head>
+<body class="is-loading dark-theme"> <div class="preloader">
+        <div class="preloader-counter-wrapper">
+            <div class="preloader-counter">
+                <span id="preloader-number">0</span><span class="percent-symbol">%</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="cursor-dot"></div>
+    <div class="cursor-follower"></div>
+
+    <canvas class="webgl-canvas"></canvas>
+
+    <nav>
+        <div class="magnetic-button">
+            <a href="#hero" class="logo">Dev.</a>
+        </div>
+        <div class="nav-links">
+            <div class="magnetic-button"><a href="#about">Sobre Mí</a></div>
+            <div class="magnetic-button"><a href="#projects">Proyectos</a></div>
+            <div class="magnetic-button"><a href="#experience">Experiencia</a></div>
+            </div>
+    </nav>
+    
+    <div class="scroll-container">
+        <section id="hero">
+            <h1 class="hero-title" data-split-text>Code<br>Artist</h1>
+        </section>
+        
+        <main id="main-content">
+            <section id="about">
+                <h2 class="section-title" data-animate-title>Sobre Mí</h2>
+                <p class="about-text" data-split-words>
+                    Soy un desarrollador apasionado por la intersección entre el diseño y el código. Creo experiencias digitales que no solo funcionan, sino que se sienten vivas.
+                </p>
+            </section>
+
+            <section id="skills-ticker">
+                <div class="ticker-wrap">
+                    <div class="ticker-track">
+                        TypeScript <span>GSAP</span> Next.js <span>Three.js</span> Node.js <span>GLSL</span> CI/CD <span>React</span>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="technologies">
+                <h2 class="section-title" data-animate-title>Mi Toolkit</h2>
+                <div class="tech-scroll-container">
+                    <div class="tech-container">
+                        <div class="tech-card">
+                            <canvas class="tech-canvas" id="tech-canvas-1"></canvas>
+                            <h3>React</h3><p>Interfaces de usuario declarativas.</p>
+                        </div>
+                        <div class="tech-card">
+                            <canvas class="tech-canvas" id="tech-canvas-2"></canvas>
+                            <h3>Three.js</h3><p>Experiencias 3D inmersivas.</p>
+                        </div>
+                        <div class="tech-card">
+                            <canvas class="tech-canvas" id="tech-canvas-3"></canvas>
+                            <h3>GSAP</h3><p>Animaciones de alto rendimiento.</p>
+                        </div>
+                        <div class="tech-card">
+                            <canvas class="tech-canvas" id="tech-canvas-4"></canvas>
+                            <h3>Next.js</h3><p>Framework de producción para React.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="projects">
+                <h2 class="section-title" data-animate-title>Proyectos<br>Destacados</h2>
+                <div class="project-list">
+                    <div class="project-item"><a href="#" class="project-item-link" data-project-id="p1"><h3>Proyecto Awwwards</h3><span>Diseño y Animación WebGL</span></a></div>
+                    <div class="project-item"><a href="#" class="project-item-link" data-project-id="p2"><h3>E-commerce 3D</h3><span>Next.js y Three.js</span></a></div>
+                    <div class="project-item"><a href="#" class="project-item-link" data-project-id="p3"><h3>Dashboard Analítico</h3><span>React y D3.js</span></a></div>
+                </div>
+            </section>
+            
+            <section id="experience">
+                <h2 class="section-title" data-animate-title>Experiencia</h2>
+                <div class="exp-timeline">
+                    <div class="timeline-line"></div>
+                    <div class="exp-item"><div class="exp-date">2023 - Presente</div><div class="exp-details"><h3>Senior Frontend Developer</h3><h4>Tech Innovations Inc.</h4></div></div>
+                    <div class="exp-item"><div class="exp-date">2020 - 2023</div><div class="exp-details"><h3>Mid-Level Developer</h3><h4>Creative Solutions</h4></div></div>
+                </div>
+            </section>
+
+            <section id="contact">
+                <div>
+                    <h2 class="contact-title">Hablemos.</h2>
+                    <div class="contact-link-wrapper magnetic-button">
+                        <a href="mailto:email@ejemplo.com" class="contact-link">email@ejemplo.com</a>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <span>© 2025 Tu Nombre</span>
+                    <div class="footer-socials">
+                        <div class="magnetic-button"><a href="#" target="_blank">GitHub</a></div>
+                        <div class="magnetic-button"><a href="#" target="_blank">LinkedIn</a></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="project-hover-gallery">
+        <canvas class="project-hover-canvas" id="p1" data-image-src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800"></canvas>
+        <canvas class="project-hover-canvas" id="p2" data-image-src="https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?w=800"></canvas>
+        <canvas class="project-hover-canvas" id="p3" data-image-src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800"></canvas>
+    </div>
+    
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script src="main.js" type="module"></script>
+    
+</body>
+</html>
