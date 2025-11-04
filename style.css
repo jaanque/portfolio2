@@ -1,388 +1,126 @@
-/* FUENTE E IMPORTACIONES */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap');
-
-/* 1. VARIABLES DE TEMA (Solo Oscuro) */
+/* :root actualizado para el Tema Claro */
 :root {
-    --color-bg: #030303;
-    --color-text: #f0f0f0;
-    --color-primary: #00ffff;
-    --color-secondary: #ff00c1;
-    --color-glass: rgba(10, 10, 10, 0.7);
-    --color-border: rgba(255, 255, 255, 0.1);
-    --cursor-dot: #f0f0f0;
-    --cursor-follower: rgba(255, 255, 255, 0.1);
+    --color-bg: #f4f4f4;      /* Fondo gris claro */
+    --color-text: #1a1a1a;      /* Texto negro/gris oscuro */
+    --color-primary: #0066ff;   /* Un azul primario vibrante */
 }
 
-/* 2. Reset y Body (Preparado para Lenis) */
-html.lenis { height: auto; }
-.lenis.lenis-smooth { scroll-behavior: auto !important; }
-
-* {
+/* Reset y setup del fondo */
+body, html {
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-    cursor: none; 
-}
-html, body {
     width: 100%;
-    overflow-x: hidden;
-}
-body {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Inter', -apple-system, sans-serif;
     background-color: var(--color-bg);
     color: var(--color-text);
 }
-body.is-loading { overflow: hidden; }
 
-.section-title {
-    font-size: clamp(3rem, 10vw, 8rem);
-    text-transform: uppercase;
-    font-weight: 700;
-    line-height: 1;
-    padding: 0 5%;
-    margin-bottom: 5rem;
-    
-    /* Para la animación de caracteres */
-    overflow: hidden;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-}
-.section-title .char {
-    display: inline-block;
-    transform: translateY(110%);
-    will-change: transform;
-}
-
-/* 3. PRELOADER */
-.preloader {
-    position: fixed; top: 0; left: 0;
-    width: 100%; height: 100vh;
-    background: var(--color-bg);
-    z-index: 1000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    color: var(--color-text);
-}
-.preloader-counter {
-    display: flex;
-    align-items: baseline;
-    font-size: 5vw;
-    font-weight: 700;
-    overflow: hidden; 
-}
-.preloader-counter-wrapper { overflow: hidden; }
-.preloader-counter span {
-    display: inline-block;
-    transform: translateY(0);
-    will-change: transform;
-}
-.preloader-counter .percent-symbol {
-    font-size: 0.5em;
-    margin-left: 0.1em;
-}
-
-/* 4. CURSOR (Doble Partícula) */
-.cursor-dot {
-    position: fixed; top: 0; left: 0;
-    width: 8px; height: 8px;
-    background-color: var(--cursor-dot);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 9999;
-    transform: translate(-50%, -50%);
-}
-.cursor-follower {
-    position: fixed; top: 0; left: 0;
-    width: 30px; height: 30px;
-    border: 1px solid var(--cursor-follower);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 9999;
-    transform: translate(-50%, -50%);
-    transition: width 0.4s cubic-bezier(0.23, 1, 0.32, 1), 
-                height 0.4s cubic-bezier(0.23, 1, 0.32, 1), 
-                border-color 0.3s ease, 
-                background-color 0.3s ease;
-    mix-blend-mode: exclusion;
-}
-body.cursor-hover-link .cursor-follower {
-    width: 60px; height: 60px;
-    background-color: var(--color-secondary);
-    border-color: transparent;
-}
-body.cursor-hover-project .cursor-follower {
-    width: 100px; height: 100px;
-    background-color: var(--color-text);
-    border-color: transparent;
-    mix-blend-mode: difference;
-}
-body.cursor-hover-huge .cursor-follower {
-    width: 150px; height: 150px;
-    background-color: var(--color-primary);
-    border-color: transparent;
-    mix-blend-mode: difference;
-}
-
-/* 5. NAVEGACIÓN */
-nav {
-    position: fixed; top: 0; left: 0;
-    width: 100%;
-    padding: 2rem 5%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 100;
-    opacity: 0;
-    transform: translateY(-100%);
-    will-change: transform, opacity;
-}
-.nav-links { display: flex; gap: 0.5rem; align-items: center; }
-.magnetic-button { display: inline-block; cursor: pointer; will-change: transform; pointer-events: auto; }
-.magnetic-button a, .magnetic-button .theme-toggle-btn {
-    display: inline-block; padding: 1rem;
-    text-decoration: none; color: var(--color-text);
-    font-weight: 500; font-size: 1rem;
-    transition: color 0.3s ease;
-    background: none; border: none;
-    font-family: 'Space Grotesk', sans-serif;
-}
-.magnetic-button:hover a, .magnetic-button:hover .theme-toggle-btn { color: var(--color-primary); }
-/* Botón de tema eliminado */
-#theme-toggle { display: none; }
-
-
-/* 6. HÉROE 3D (CANVAS + TÍTULO) */
-.webgl-canvas {
+/* 1. EL CANVAS 3D FIJADO (sigue igual) */
+#sculpture-canvas {
     position: fixed;
     top: 0;
     left: 0;
     outline: none;
-    z-index: 1;
-}
-#hero {
-    height: 100vh;
-    display: grid;
-    place-items: center;
-    text-align: center;
-    position: relative;
-    z-index: 2;
-}
-.hero-title {
-    font-size: clamp(3rem, 15vw, 14rem);
-    font-weight: 700;
-    line-height: 0.9;
-    text-transform: uppercase;
+    z-index: 1; 
 }
 
-/* 7. CONTENIDO PRINCIPAL (REESTRUCTURADO) */
-#main-content {
-    position: relative;
-    z-index: 3;
-    width: 100%;
-}
-#main-content > section {
-    min-height: 100vh; /* Cada sección es un ancla de scroll */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 5%;
-    position: relative;
-}
-.content-panel {
-    /* Panel de Vidrio */
-    background: rgba(15, 15, 15, 0.6);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 3rem;
-    max-width: 800px;
-    width: 100%;
-    opacity: 0; /* Controlado por GSAP */
-    transform: translateY(50px); /* Controlado por GSAP */
-    visibility: hidden; /* Controlado por GSAP */
-}
-#about {
-    padding: 15rem 5%;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-.about-text {
-    font-size: clamp(1.5rem, 4vw, 3rem);
-    font-weight: 500; line-height: 1.4;
-}
-.about-text .word {
-    display: inline-block;
-    opacity: 0.15;
-    transition: opacity 0.4s ease;
-}
-.about-text .word.is-revealed { opacity: 1; }
-
-/* 8. SECCIÓN SKILLS (Marquesina) */
-#skills-ticker {
-    min-height: auto;
-    padding: 8rem 0;
-    overflow: hidden;
-    white-space: nowrap;
-}
-.ticker-track {
-    display: inline-block;
-    font-size: clamp(3rem, 8vw, 7rem);
-    text-transform: uppercase; font-weight: 700;
-    color: var(--ticker-text);
-}
-.ticker-track.outline { color: transparent; -webkit-text-stroke: 1px var(--ticker-stroke); }
-.ticker-track span { margin: 0 2rem; color: var(--color-text); -webkit-text-stroke: 0; }
-
-/* 9. SECCIÓN "TECNOLOGÍAS" (Física de Velocidad) */
-#technologies {
-    padding: 10rem 0;
-    overflow: hidden;
-}
-.tech-container {
-    display: flex;
-    width: fit-content;
-    padding-left: 5%;
-    padding-right: 5%;
-    will-change: transform;
-}
-.tech-card {
-    width: 400px;
-    height: 500px;
-    margin-right: 3rem;
-    padding: 2rem;
-    border-radius: 20px;
-    background: var(--color-glass);
-    border: 1px solid var(--color-border);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    perspective: 800px;
-}
-/* ¡NUEVO 3D! */
-.tech-canvas {
-    width: 100%;
-    height: 200px;
-    margin-bottom: 2rem;
-}
-.tech-card h3 { font-size: 2.5rem; }
-.tech-card p { font-size: 1.1rem; color: var(--color-text); opacity: 0.7; }
-
-/* 10. SECCIÓN "PROYECTOS" (Hover-Reveal List 3D) */
-#projects {
-    padding: 10rem 5%;
-    max-width: 1400px;
-    margin: 0 auto;
-}
-.project-list {
-    border-top: 1px solid var(--color-border);
-}
-.project-item {
-    border-bottom: 1px solid var(--color-border);
-}
-.project-item-link {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4rem 2rem;
-    text-decoration: none;
-    color: var(--color-text);
-    transition: opacity 0.3s ease;
-}
-.project-item-link h3 {
-    font-size: clamp(2rem, 5vw, 4rem);
-    font-weight: 700;
-    transition: color 0.3s ease;
-}
-.project-item-link span {
-    font-size: 1rem;
-    font-weight: 500;
-    opacity: 0.7;
-}
-.project-list:hover .project-item-link {
-    opacity: 0.3;
-}
-.project-list:hover .project-item-link:hover {
-    opacity: 1;
-    color: var(--color-primary);
-}
-.project-hover-gallery {
+/* 2. LA UI ESTÁTICA (colores actualizados) */
+.header {
     position: fixed;
     top: 0;
     left: 0;
-    width: 400px;
-    height: 500px;
-    z-index: 99;
-    pointer-events: none;
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8);
-    will-change: transform, opacity;
-}
-.project-hover-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
-    height: 100%;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.4s ease, visibility 0.4s ease;
-    border-radius: 10px;
-    overflow: hidden;
-}
-.project-hover-canvas.is-active { opacity: 1; visibility: visible; }
-
-/* 11. SECCIÓN "EXPERIENCIA" (Timeline Vivo) */
-#experience {
-    padding: 15rem 5%;
-    max-width: 1200px;
-    margin: 0 auto;
-    position: relative; /* Para el canvas de fondo */
-}
-.exp-timeline {
-    position: relative;
-}
-.timeline-line {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 2px;
-    height: 0%; /* Animado por JS */
-    background-color: var(--color-primary);
-}
-.exp-item {
-    display: grid;
-    grid-template-columns: 1fr 3fr;
-    gap: 2rem;
-    padding: 4rem 0 4rem 2rem; 
-    border-bottom: 1px solid var(--color-border);
-    overflow: hidden;
-}
-.exp-date { font-size: 1.2rem; font-weight: 700; color: var(--color-text); opacity: 0.7; will-change: transform, opacity; }
-.exp-details { will-change: transform, opacity; }
-.exp-details h3 { font-size: 2.5rem; margin-bottom: 0.5rem; }
-.exp-details h4 { font-size: 1.5rem; font-weight: 500; color: var(--color-secondary); margin-bottom: 1rem; }
-
-/* 12. FOOTER / CONTACTO (Monumental) */
-#contact {
-    min-height: 90vh;
-    padding: 10rem 5%;
+    padding: 2rem 3rem;
     display: flex;
-    flex-direction: column;
     justify-content: space-between;
     align-items: center;
+    z-index: 100;
+    box-sizing: border-box; 
+}
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-primary); /* Azul */
+}
+.navigation a {
+    color: var(--color-text); /* Texto oscuro */
+    text-decoration: none;
+    margin-left: 1.5rem;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+.navigation a:hover {
+    color: var(--color-primary); /* Azul */
+}
+
+/* 3. EL CONTENEDOR DE SCROLL (sigue igual) */
+#scroll-container {
+    position: relative;
+    z-index: 10;
+}
+.scroll-section {
+    min-height: 100vh;
+    padding: 10rem 3rem 0; 
+    display: flex;
+    align-items: center; 
+    box-sizing: border-box;
+}
+
+/* El contenedor del texto (sigue igual) */
+.content-box {
+    width: 100%;
+    max-width: 450px;
+}
+#home .content-box {
+    margin: 0 auto; 
     text-align: center;
 }
-.contact-title { font-size: clamp(3rem, 12vw, 10rem); font-weight: 700; text-transform: uppercase; line-height: 1; }
-.contact-link-wrapper { margin: 4rem 0; }
-.contact-link {
-    font-size: clamp(2rem, 8vw, 6rem);
-    font-weight: 700;
-    color: var(--color-text);
-    text-decoration: none;
-    padding: 2rem 4rem; 
-    will-change: transform;
+.align-left {
+    margin-left: 10%;
 }
-.footer-bottom { width: 100%; display: flex; justify-content: space-between; align-items: center; font-weight: 500; }
-.footer-socials { display: flex; gap: 0.5rem; }
-.footer-socials a { padding: 1rem; text-decoration: none; color: var(--color-text); font-weight: 700; }
+.align-right {
+    margin-left: auto; 
+    margin-right: 10%;
+    text-align: right;
+}
+
+/* Setup inicial de GSAP (sigue igual) */
+.gsap-reveal,
+.gsap-subtitle,
+.skills-list li {
+    opacity: 0;
+    transform: translateY(30px);
+}
+.gsap-title {
+    opacity: 0;
+    transform: scale(1.2);
+}
+
+/* Estilos de texto limpios (colores actualizados) */
+h1 {
+    font-size: 4.5rem;
+    margin: 0;
+    color: #111; /* Título principal más oscuro */
+}
+h2 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--color-primary); /* Azul */
+}
+p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+.skills-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 1.5rem;
+}
+/* Fondo de la lista de skills actualizado */
+.skills-list li {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    background: rgba(0, 102, 255, 0.1); /* Fondo azul claro */
+    padding: 10px 15px;
+    border-radius: 5px;
+}
